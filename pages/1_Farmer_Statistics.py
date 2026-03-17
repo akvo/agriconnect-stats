@@ -282,8 +282,7 @@ if stats:
     with col3:
         active_rate = activity.get("active_rate", 0)
         active_farmers = activity.get("active_farmers", 0)
-        dormant_farmers = activity.get("dormant_farmers", 0)
-        total_farmers = active_farmers + dormant_farmers
+        completed = onboarding.get("completed", 0)
         st.metric(
             label="Active Rate",
             value=f"{active_rate * 100:.1f}%",
@@ -291,7 +290,7 @@ if stats:
         st.markdown(f"""
         <div class="metric-info">
             <i class="fa-solid fa-circle-info"></i>
-            <span class="tooltip-text">{active_farmers:,} active ÷ {total_farmers:,} total × 100</span>
+            <span class="tooltip-text">{active_farmers:,} active ÷ {completed:,} completed × 100</span>
         </div>
         """, unsafe_allow_html=True)
 
