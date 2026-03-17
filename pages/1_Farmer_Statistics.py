@@ -32,6 +32,45 @@ st.markdown("""
     [data-testid="stMetricValue"] {
         font-weight: 600;
     }
+    .metric-info {
+        position: relative;
+        margin-top: -3.5rem;
+        margin-bottom: 2rem;
+        text-align: right;
+        padding-right: 0.5rem;
+        z-index: 100;
+    }
+    .metric-info i {
+        color: #94a3b8;
+        cursor: help;
+        font-size: 0.75rem;
+    }
+    .metric-info:hover i {
+        color: #64748b;
+    }
+    .metric-info .tooltip-text {
+        visibility: hidden;
+        background-color: #1e293b;
+        color: #fff;
+        text-align: left;
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        position: absolute;
+        z-index: 1000;
+        top: 1.25rem;
+        right: 0.5rem;
+        width: max-content;
+        max-width: 200px;
+        font-size: 0.75rem;
+        font-weight: 400;
+        line-height: 1.4;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .metric-info:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
     .section-title {
         font-size: 0.75rem;
         font-weight: 600;
@@ -209,10 +248,18 @@ if stats:
         )
     with col3:
         completion_rate = onboarding.get("completion_rate", 0)
+        started = onboarding.get("started", 0)
+        completed = onboarding.get("completed", 0)
         st.metric(
             label="Completion Rate",
             value=f"{completion_rate * 100:.1f}%",
         )
+        st.markdown(f"""
+        <div class="metric-info">
+            <i class="fa-solid fa-circle-info"></i>
+            <span class="tooltip-text">{completed:,} completed ÷ {started:,} started × 100</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     # Activity Section
     st.markdown("""
@@ -234,10 +281,19 @@ if stats:
         )
     with col3:
         active_rate = activity.get("active_rate", 0)
+        active_farmers = activity.get("active_farmers", 0)
+        dormant_farmers = activity.get("dormant_farmers", 0)
+        total_farmers = active_farmers + dormant_farmers
         st.metric(
             label="Active Rate",
             value=f"{active_rate * 100:.1f}%",
         )
+        st.markdown(f"""
+        <div class="metric-info">
+            <i class="fa-solid fa-circle-info"></i>
+            <span class="tooltip-text">{active_farmers:,} active ÷ {total_farmers:,} total × 100</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)
     with col1:

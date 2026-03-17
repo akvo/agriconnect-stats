@@ -32,6 +32,45 @@ st.markdown("""
     [data-testid="stMetricValue"] {
         font-weight: 600;
     }
+    .metric-info {
+        position: relative;
+        margin-top: -3.5rem;
+        margin-bottom: 2rem;
+        text-align: right;
+        padding-right: 0.5rem;
+        z-index: 100;
+    }
+    .metric-info i {
+        color: #94a3b8;
+        cursor: help;
+        font-size: 0.75rem;
+    }
+    .metric-info:hover i {
+        color: #64748b;
+    }
+    .metric-info .tooltip-text {
+        visibility: hidden;
+        background-color: #1e293b;
+        color: #fff;
+        text-align: left;
+        padding: 0.5rem 0.75rem;
+        border-radius: 4px;
+        position: absolute;
+        z-index: 1000;
+        top: 1.25rem;
+        right: 0.5rem;
+        width: max-content;
+        max-width: 200px;
+        font-size: 0.75rem;
+        font-weight: 400;
+        line-height: 1.4;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .metric-info:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
     .section-title {
         font-size: 0.75rem;
         font-weight: 600;
@@ -203,6 +242,12 @@ if stats:
         st.metric(label="Closed", value=f"{closed_tickets:,}")
     with col3:
         st.metric(label="Resolution Rate", value=f"{resolution_rate:.1f}%")
+        st.markdown(f"""
+        <div class="metric-info">
+            <i class="fa-solid fa-circle-info"></i>
+            <span class="tooltip-text">{closed_tickets:,} closed ÷ {total_tickets:,} total × 100</span>
+        </div>
+        """, unsafe_allow_html=True)
     with col4:
         avg_response = tickets.get("avg_response_time_hours")
         st.metric(
