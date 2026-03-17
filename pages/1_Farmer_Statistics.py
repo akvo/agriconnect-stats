@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import date, timedelta
+from datetime import date
 from api import (
     get_farmer_stats,
     get_farmer_stats_by_ward,
@@ -21,12 +21,12 @@ st.markdown("""
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
-    .stMetric {
-        background: #f8fafc;
+    div[data-testid="stMetric"] {
+        background: #f1f5f9;
         border: 1px solid #e2e8f0;
         padding: 1rem;
     }
-    .stMetric:hover {
+    div[data-testid="stMetric"]:hover {
         border-color: #cbd5e1;
     }
     [data-testid="stMetricValue"] {
@@ -75,10 +75,12 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 col1, col2 = st.sidebar.columns(2)
+first_of_last_month = date.today().replace(day=1) - date.resolution
+first_of_last_month = first_of_last_month.replace(day=1)
 with col1:
     start_date = st.date_input(
         "From",
-        value=date.today() - timedelta(days=30),
+        value=first_of_last_month,
         max_value=date.today(),
     )
 with col2:
@@ -313,7 +315,7 @@ if stats:
             yaxis=dict(showgrid=True, gridcolor="#f1f5f9"),
             plot_bgcolor="white",
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
         col1, col2, col3 = st.columns(3)
         with col1:

@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import date, timedelta
+from datetime import date
 from api import (
     get_eo_stats,
     get_eo_stats_by_eo,
@@ -21,12 +21,12 @@ st.markdown("""
 <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <style>
-    .stMetric {
-        background: #f8fafc;
+    div[data-testid="stMetric"] {
+        background: #f1f5f9;
         border: 1px solid #e2e8f0;
         padding: 1rem;
     }
-    .stMetric:hover {
+    div[data-testid="stMetric"]:hover {
         border-color: #cbd5e1;
     }
     [data-testid="stMetricValue"] {
@@ -78,10 +78,12 @@ st.sidebar.markdown("""
 """, unsafe_allow_html=True)
 
 col1, col2 = st.sidebar.columns(2)
+first_of_last_month = date.today().replace(day=1) - date.resolution
+first_of_last_month = first_of_last_month.replace(day=1)
 with col1:
     start_date = st.date_input(
         "From",
-        value=date.today() - timedelta(days=30),
+        value=first_of_last_month,
         max_value=date.today(),
     )
 with col2:
@@ -218,16 +220,16 @@ if stats:
                 hole=0.6,
                 marker_colors=["#3b82f6", "#e2e8f0"],
                 textinfo="percent",
-                textposition="outside",
+                textposition="inside",
             )])
             fig.update_layout(
-                height=250,
-                margin=dict(l=20, r=20, t=20, b=20),
+                height=280,
+                margin=dict(l=40, r=40, t=40, b=60),
                 showlegend=True,
-                legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5),
+                legend=dict(orientation="h", yanchor="top", y=-0.05, xanchor="center", x=0.5),
                 annotations=[dict(text=f"{resolution_rate:.0f}%", x=0.5, y=0.5, font_size=20, showarrow=False)]
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
         with col2:
             if avg_response:
@@ -330,7 +332,7 @@ if stats:
                     yaxis=dict(showgrid=False),
                     plot_bgcolor="white",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
             with col2:
                 chart_df = display_df.sort_values("Closed", ascending=True).tail(10)
@@ -350,7 +352,7 @@ if stats:
                     yaxis=dict(showgrid=False),
                     plot_bgcolor="white",
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
             csv = display_df[columns_available].to_csv(index=False)
             st.download_button(
