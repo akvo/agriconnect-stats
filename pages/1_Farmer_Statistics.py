@@ -340,20 +340,23 @@ if stats:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Registration chart
-    st.markdown("""
-    <p class="section-title"><i class="fa-solid fa-chart-area"></i> Registrations Over Time</p>
-    """, unsafe_allow_html=True)
-
+    # Registration charts
     if registrations and registrations.get("data"):
         reg_df = pd.DataFrame(registrations["data"])
         reg_df["date"] = pd.to_datetime(reg_df["date"])
+        reg_df = reg_df.sort_values("date")
+        reg_df["cumulative"] = reg_df["count"].cumsum()
+
+        # Cumulative chart
+        st.markdown("""
+        <p class="section-title"><i class="fa-solid fa-chart-area"></i> Cumulative Registrations</p>
+        """, unsafe_allow_html=True)
 
         fig = px.area(
             reg_df,
             x="date",
-            y="count",
-            labels={"date": "", "count": ""},
+            y="cumulative",
+            labels={"date": "", "cumulative": ""},
         )
         fig.update_traces(
             fill="tozeroy",
@@ -363,7 +366,7 @@ if stats:
         )
         fig.update_layout(
             hovermode="x unified",
-            height=300,
+            height=250,
             margin=dict(l=0, r=0, t=10, b=0),
             showlegend=False,
             xaxis=dict(showgrid=False),
@@ -372,12 +375,40 @@ if stats:
         )
         st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
+        # Daily chart
+        st.markdown("""
+        <p class="section-title"><i class="fa-solid fa-chart-line"></i> Daily Registrations</p>
+        """, unsafe_allow_html=True)
+
+        fig2 = px.line(
+            reg_df,
+            x="date",
+            y="count",
+            labels={"date": "", "count": ""},
+        )
+        fig2.update_traces(
+            line_color="#3b82f6",
+            line_width=2,
+        )
+        fig2.update_layout(
+            hovermode="x unified",
+            height=200,
+            margin=dict(l=0, r=0, t=10, b=0),
+            showlegend=False,
+            xaxis=dict(showgrid=False),
+            yaxis=dict(showgrid=True, gridcolor="#f1f5f9"),
+            plot_bgcolor="white",
+        )
+        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Total", f"{registrations.get('total', 0):,}")
         with col2:
             if len(reg_df) > 0:
-                st.metric("Peak", reg_df.loc[reg_df["count"].idxmax(), "date"].strftime("%b %d"))
+                peak_date = reg_df.loc[reg_df["count"].idxmax(), "date"].strftime("%b %d")
+                peak_count = reg_df["count"].max()
+                st.metric("Peak Day", f"{peak_count:,} ({peak_date})")
         with col3:
             if len(reg_df) > 0:
                 st.metric("Daily Avg", f"{reg_df['count'].mean():.1f}")
