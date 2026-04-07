@@ -55,6 +55,7 @@ def get_farmer_stats(
     end_date: Optional[date] = None,
     administrative_id: Optional[int] = None,
     phone_prefix: str = "+254",
+    crop_type: Optional[str] = None,
     active_days: int = 30,
 ):
     """Get comprehensive farmer statistics."""
@@ -65,6 +66,8 @@ def get_farmer_stats(
         params["end_date"] = end_date.isoformat()
     if administrative_id:
         params["administrative_id"] = administrative_id
+    if crop_type:
+        params["crop_type"] = crop_type
     return api_get("/statistic/farmers/stats", params=params)
 
 
@@ -73,6 +76,7 @@ def get_farmer_stats_by_ward(
     end_date: Optional[date] = None,
     administrative_id: Optional[int] = None,
     phone_prefix: str = "+254",
+    crop_type: Optional[str] = None,
 ):
     """Get farmer statistics grouped by ward."""
     params = {"phone_prefix": phone_prefix}
@@ -82,6 +86,8 @@ def get_farmer_stats_by_ward(
         params["end_date"] = end_date.isoformat()
     if administrative_id:
         params["administrative_id"] = administrative_id
+    if crop_type:
+        params["crop_type"] = crop_type
     return api_get("/statistic/farmers/stats/by-ward", params=params)
 
 
@@ -90,6 +96,7 @@ def get_farmer_registrations(
     end_date: Optional[date] = None,
     administrative_id: Optional[int] = None,
     phone_prefix: str = "+254",
+    crop_type: Optional[str] = None,
     group_by: str = "day",
 ):
     """Get time series data of farmer registrations."""
@@ -100,6 +107,8 @@ def get_farmer_registrations(
         params["end_date"] = end_date.isoformat()
     if administrative_id:
         params["administrative_id"] = administrative_id
+    if crop_type:
+        params["crop_type"] = crop_type
     return api_get("/statistic/farmers/registrations", params=params)
 
 
@@ -150,3 +159,49 @@ def get_eo_count(administrative_id: Optional[int] = None):
 def get_eo_list():
     """Get list of all EOs for filter dropdown."""
     return api_get("/statistic/eo/list")
+
+
+# Aggregate endpoints (for dashboard views with available filters)
+def get_aggregate_farmers(
+    level: str = "region",
+    administrative_id: Optional[int] = None,
+    crop_type: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+):
+    """Get farmer statistics aggregated by administrative level.
+
+    Returns data grouped by level and an 'available' object listing
+    all regions, districts, wards, and crop_types that have data.
+    """
+    params = {"level": level}
+    if administrative_id:
+        params["administrative_id"] = administrative_id
+    if crop_type:
+        params["crop_type"] = crop_type
+    if start_date:
+        params["start_date"] = start_date.isoformat()
+    if end_date:
+        params["end_date"] = end_date.isoformat()
+    return api_get("/statistic/aggregate/farmers", params=params)
+
+
+def get_aggregate_eo(
+    level: str = "region",
+    administrative_id: Optional[int] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+):
+    """Get EO statistics aggregated by administrative level.
+
+    Returns data grouped by level and an 'available' object listing
+    all regions, districts, wards that have data.
+    """
+    params = {"level": level}
+    if administrative_id:
+        params["administrative_id"] = administrative_id
+    if start_date:
+        params["start_date"] = start_date.isoformat()
+    if end_date:
+        params["end_date"] = end_date.isoformat()
+    return api_get("/statistic/aggregate/eo", params=params)

@@ -8,6 +8,7 @@ from api import (
     get_farmer_stats_by_ward,
     get_farmer_registrations,
     get_administrative_by_parent,
+    get_aggregate_farmers,
 )
 
 st.set_page_config(
@@ -129,6 +130,30 @@ with col2:
         max_value=date.today(),
     )
 
+# Fetch aggregate data first to get available crop types
+initial_aggregate = get_aggregate_farmers(level="region")
+all_crop_types = initial_aggregate.get("available", {}).get("crop_types", []) if initial_aggregate else []
+
+# Crop type filter (shown first so it can affect location options)
+st.sidebar.markdown("---")
+selected_crop_type = None
+if all_crop_types:
+    st.sidebar.markdown("""
+    <p style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
+        <i class="fa-solid fa-seedling"></i> Crop Type
+    </p>
+    """, unsafe_allow_html=True)
+
+    crop_options = ["All Crops"] + sorted(all_crop_types)
+    selected_crop = st.sidebar.selectbox(
+        "Crop",
+        crop_options,
+        index=0,
+        label_visibility="collapsed",
+    )
+    if selected_crop != "All Crops":
+        selected_crop_type = selected_crop
+
 st.sidebar.markdown("---")
 st.sidebar.markdown("""
 <p style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">
@@ -142,53 +167,70 @@ selected_region_name = "All Regions"
 selected_district_name = "All Districts"
 selected_ward_name = "All Wards"
 
-# Load regions (children of parent_id=1)
+# Fetch aggregate data with crop filter to get available areas
+aggregate_data = get_aggregate_farmers(level="region", crop_type=selected_crop_type)
+available = aggregate_data.get("available", {}) if aggregate_data else {}
+available_region_ids = {r["id"] for r in available.get("regions", [])}
+available_district_ids = {d["id"] for d in available.get("districts", [])}
+available_ward_ids = {w["id"] for w in available.get("wards", [])}
+
+# Load regions - show all, mark those without data with indicator
 regions_data = get_administrative_by_parent(1)
 region_options = {"All Regions": None}
 if regions_data and "administrative" in regions_data:
     for r in sorted(regions_data["administrative"], key=lambda x: x["name"]):
-        region_options[r["name"]] = r["id"]
+        has_data = r["id"] in available_region_ids
+        label = r["name"] if has_data else f"{r['name']} (no data)"
+        region_options[label] = r["id"]
 
-selected_region_name = st.sidebar.selectbox(
+selected_region_label = st.sidebar.selectbox(
     "Region",
     list(region_options.keys()),
     index=0,
 )
-selected_region_id = region_options[selected_region_name]
+selected_region_id = region_options[selected_region_label]
+# Extract clean name for filter path display
+selected_region_name = selected_region_label.replace(" (no data)", "")
 
 # Set administrative_id to region if selected
 if selected_region_id:
     administrative_id = selected_region_id
 
-    # Load districts for drill-down
+    # Load districts - show all, mark those without data
     districts_data = get_administrative_by_parent(selected_region_id)
     district_options = {"All Districts": None}
     if districts_data and "administrative" in districts_data:
         for d in sorted(districts_data["administrative"], key=lambda x: x["name"]):
-            district_options[d["name"]] = d["id"]
+            has_data = d["id"] in available_district_ids
+            label = d["name"] if has_data else f"{d['name']} (no data)"
+            district_options[label] = d["id"]
 
-    selected_district_name = st.sidebar.selectbox(
+    selected_district_label = st.sidebar.selectbox(
         "District",
         list(district_options.keys()),
     )
-    selected_district_id = district_options[selected_district_name]
+    selected_district_id = district_options[selected_district_label]
+    selected_district_name = selected_district_label.replace(" (no data)", "")
 
     # Override administrative_id to district if selected
     if selected_district_id:
         administrative_id = selected_district_id
 
-        # Load wards for drill-down
+        # Load wards - show all, mark those without data
         wards_data = get_administrative_by_parent(selected_district_id)
         ward_options = {"All Wards": None}
         if wards_data and "administrative" in wards_data:
             for w in sorted(wards_data["administrative"], key=lambda x: x["name"]):
-                ward_options[w["name"]] = w["id"]
+                has_data = w["id"] in available_ward_ids
+                label = w["name"] if has_data else f"{w['name']} (no data)"
+                ward_options[label] = w["id"]
 
-        selected_ward_name = st.sidebar.selectbox(
+        selected_ward_label = st.sidebar.selectbox(
             "Ward",
             list(ward_options.keys()),
         )
-        selected_ward_id = ward_options[selected_ward_name]
+        selected_ward_id = ward_options[selected_ward_label]
+        selected_ward_name = selected_ward_label.replace(" (no data)", "")
 
         # Override administrative_id to ward if selected
         if selected_ward_id:
@@ -205,29 +247,249 @@ if selected_ward_name and selected_ward_name != "All Wards":
 if filter_parts:
     st.sidebar.caption(f"→ {' / '.join(filter_parts)}")
 
-# Fetch data with administrative_id filter
+# Determine the breakdown level based on current selection
+# We fetch the 2nd lower level to create stacked bars grouped by 1st lower level
+if selected_ward_name != "All Wards":
+    breakdown_level = None  # Ward selected, no further breakdown
+    breakdown_admin_id = None
+    group_by_level = None
+elif selected_district_name != "All Districts":
+    breakdown_level = "ward"  # Fetch wards, but no grouping (single district)
+    breakdown_admin_id = selected_district_id
+    group_by_level = None
+elif selected_region_name != "All Regions":
+    breakdown_level = "ward"  # Fetch wards, group by district
+    breakdown_admin_id = selected_region_id
+    group_by_level = "district"
+else:
+    breakdown_level = "district"  # Fetch districts, group by region
+    breakdown_admin_id = None
+    group_by_level = "region"
+
+# Fetch data with administrative_id and crop_type filters
 with st.spinner("Loading..."):
     stats = get_farmer_stats(
         start_date=start_date,
         end_date=end_date,
         administrative_id=administrative_id,
         phone_prefix="+254",
+        crop_type=selected_crop_type,
     )
     stats_by_ward = get_farmer_stats_by_ward(
         start_date=start_date,
         end_date=end_date,
         administrative_id=administrative_id,
         phone_prefix="+254",
+        crop_type=selected_crop_type,
     )
     registrations = get_farmer_registrations(
         start_date=start_date,
         end_date=end_date,
         administrative_id=administrative_id,
         phone_prefix="+254",
+        crop_type=selected_crop_type,
         group_by="day",
     )
+    # Fetch aggregate data for breakdown chart
+    breakdown_data = None
+    if breakdown_level:
+        breakdown_data = get_aggregate_farmers(
+            level=breakdown_level,
+            administrative_id=breakdown_admin_id,
+            crop_type=selected_crop_type,
+            start_date=start_date,
+            end_date=end_date,
+        )
 
 if stats:
+    # Breakdown stacked bar chart
+    if breakdown_data and breakdown_data.get("data"):
+        breakdown_df = pd.DataFrame(breakdown_data["data"])
+        if not breakdown_df.empty:
+            fig = go.Figure()
+
+            if group_by_level:
+                # Extract parent from path for grouping
+                # Path format: "Kenya > Region > District > Ward"
+                path_parts = breakdown_df["path"].str.split(" > ")
+                if group_by_level == "region":
+                    breakdown_df["parent"] = path_parts.str[1]  # Region is 2nd part
+                    level_label = "Region"
+                elif group_by_level == "district":
+                    breakdown_df["parent"] = path_parts.str[2]  # District is 3rd part
+                    level_label = "District"
+
+                # Get unique parents and children
+                parents = breakdown_df["parent"].unique()
+                parents_sorted = sorted(parents, key=lambda p: breakdown_df[breakdown_df["parent"] == p]["farmer_count"].sum(), reverse=False)
+
+                # Create color palette for children
+                colors = px.colors.qualitative.Set2
+
+                # Get all unique children with their paths for legend
+                # Create a mapping of name to path for legend labels
+                child_paths = breakdown_df.drop_duplicates("name").set_index("name")["path"].to_dict()
+                # Sort children by path to group them by parent in legend
+                all_children = sorted(breakdown_df["name"].unique(), key=lambda x: child_paths.get(x, x))
+                child_colors = {child: colors[i % len(colors)] for i, child in enumerate(all_children)}
+
+                # Add traces for each child (stacked within parent)
+                for child in all_children:
+                    child_data = breakdown_df[breakdown_df["name"] == child]
+                    x_vals = []
+                    y_vals = []
+                    text_vals = []
+                    for parent in parents_sorted:
+                        parent_child = child_data[child_data["parent"] == parent]
+                        if not parent_child.empty:
+                            x_vals.append(parent_child["farmer_count"].values[0])
+                            text_vals.append(str(parent_child["farmer_count"].values[0]))
+                        else:
+                            x_vals.append(0)
+                            text_vals.append("")
+                        y_vals.append(parent)
+
+                    # Use path for legend (remove "Kenya > " prefix for brevity)
+                    legend_label = child_paths.get(child, child)
+                    if legend_label.startswith("Kenya > "):
+                        legend_label = legend_label[8:]  # Remove "Kenya > "
+
+                    fig.add_trace(go.Bar(
+                        y=y_vals,
+                        x=x_vals,
+                        name=legend_label,
+                        orientation="h",
+                        marker_color=child_colors[child],
+                        text=text_vals,
+                        textposition="inside",
+                        textfont=dict(color="white", size=10),
+                    ))
+
+                chart_height = max(200, len(parents_sorted) * 40)
+            else:
+                # No grouping - just show breakdown level directly
+                level_label = breakdown_level.title() if breakdown_level else ""
+                chart_df = breakdown_df[["name", "farmer_count"]].copy()
+                chart_df = chart_df.sort_values("farmer_count", ascending=True)
+
+                fig.add_trace(go.Bar(
+                    y=chart_df["name"],
+                    x=chart_df["farmer_count"],
+                    name="Farmers",
+                    orientation="h",
+                    marker_color="#3b82f6",
+                    text=chart_df["farmer_count"],
+                    textposition="inside",
+                    textfont=dict(color="white"),
+                ))
+                chart_height = max(200, len(chart_df) * 35)
+
+            st.markdown(f"""
+            <p class="section-title"><i class="fa-solid fa-chart-bar"></i> Farmers by {level_label}</p>
+            """, unsafe_allow_html=True)
+
+            fig.update_layout(
+                barmode="stack",
+                height=chart_height,
+                margin=dict(l=0, r=0, t=10, b=0),
+                legend=dict(
+                    orientation="v",
+                    yanchor="top",
+                    y=1,
+                    xanchor="left",
+                    x=1.02,
+                    font=dict(size=10),
+                ),
+                xaxis=dict(showgrid=True, gridcolor="#f1f5f9", fixedrange=True),
+                yaxis=dict(showgrid=False, fixedrange=True),
+                plot_bgcolor="white",
+            )
+            st.plotly_chart(fig, use_container_width=True, config={
+                "displayModeBar": False,
+                "scrollZoom": False,
+            })
+
+            # Additional charts for questions and escalations
+            additional_metrics = [
+                ("questions_count", "Questions", "#10b981"),
+                ("escalations_count", "Escalations", "#f59e0b"),
+            ]
+
+            for metric_key, metric_label, metric_color in additional_metrics:
+                fig_metric = go.Figure()
+
+                if group_by_level:
+                    for child in all_children:
+                        child_data = breakdown_df[breakdown_df["name"] == child]
+                        x_vals = []
+                        y_vals = []
+                        text_vals = []
+                        for parent in parents_sorted:
+                            parent_child = child_data[child_data["parent"] == parent]
+                            if not parent_child.empty:
+                                val = parent_child[metric_key].values[0]
+                                x_vals.append(val)
+                                text_vals.append(str(val) if val > 0 else "")
+                            else:
+                                x_vals.append(0)
+                                text_vals.append("")
+                            y_vals.append(parent)
+
+                        legend_label = child_paths.get(child, child)
+                        if legend_label.startswith("Kenya > "):
+                            legend_label = legend_label[8:]
+
+                        fig_metric.add_trace(go.Bar(
+                            y=y_vals,
+                            x=x_vals,
+                            name=legend_label,
+                            orientation="h",
+                            marker_color=child_colors[child],
+                            text=text_vals,
+                            textposition="inside",
+                            textfont=dict(color="white", size=10),
+                        ))
+                else:
+                    chart_df_metric = breakdown_df[["name", metric_key]].copy()
+                    chart_df_metric = chart_df_metric.sort_values(metric_key, ascending=True)
+
+                    fig_metric.add_trace(go.Bar(
+                        y=chart_df_metric["name"],
+                        x=chart_df_metric[metric_key],
+                        name=metric_label,
+                        orientation="h",
+                        marker_color=metric_color,
+                        text=chart_df_metric[metric_key],
+                        textposition="inside",
+                        textfont=dict(color="white"),
+                    ))
+
+                st.markdown(f"""
+                <p class="section-title"><i class="fa-solid fa-chart-bar"></i> {metric_label} by {level_label}</p>
+                """, unsafe_allow_html=True)
+
+                fig_metric.update_layout(
+                    barmode="stack",
+                    height=chart_height,
+                    margin=dict(l=0, r=0, t=10, b=0),
+                    legend=dict(
+                        orientation="v",
+                        yanchor="top",
+                        y=1,
+                        xanchor="left",
+                        x=1.02,
+                        font=dict(size=10),
+                    ),
+                    xaxis=dict(showgrid=True, gridcolor="#f1f5f9", fixedrange=True),
+                    yaxis=dict(showgrid=False, fixedrange=True),
+                    plot_bgcolor="white",
+                )
+                st.plotly_chart(fig_metric, use_container_width=True, config={
+                    "displayModeBar": False,
+                    "scrollZoom": False,
+                })
+
+            st.markdown("<br>", unsafe_allow_html=True)
     # Onboarding Section
     st.markdown("""
     <p class="section-title"><i class="fa-solid fa-clipboard-check"></i> Onboarding</p>
