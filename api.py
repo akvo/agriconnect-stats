@@ -205,3 +205,36 @@ def get_aggregate_eo(
     if end_date:
         params["end_date"] = end_date.isoformat()
     return api_get("/statistic/aggregate/eo", params=params)
+
+
+# Crop distribution endpoints
+def get_crop_distribution(
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    administrative_id: Optional[int] = None,
+):
+    """Get farmer count per crop type."""
+    params = {}
+    if start_date:
+        params["start_date"] = start_date.isoformat()
+    if end_date:
+        params["end_date"] = end_date.isoformat()
+    if administrative_id:
+        params["administrative_id"] = administrative_id
+    return api_get("/statistic/crops/distribution", params=params)
+
+
+def get_crop_distribution_matrix(
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    administrative_id: Optional[int] = None,
+):
+    """Get crop distribution by county (district level)."""
+    params = {}
+    if start_date:
+        params["start_date"] = start_date.isoformat()
+    if end_date:
+        params["end_date"] = end_date.isoformat()
+    if administrative_id:
+        params["administrative_id"] = administrative_id
+    return api_get("/statistic/crops/distribution/matrix", params=params)
