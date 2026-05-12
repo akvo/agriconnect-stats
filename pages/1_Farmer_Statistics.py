@@ -163,7 +163,7 @@ st.sidebar.markdown("""
 
 # Cascade admin filter - track the selected administrative_id at any level
 administrative_id = None
-selected_region_name = "All Regions"
+selected_region_name = "All Counties"
 selected_district_name = "All Districts"
 selected_ward_name = "All Wards"
 
@@ -176,7 +176,7 @@ available_ward_ids = {w["id"] for w in available.get("wards", [])}
 
 # Load regions - show all, mark those without data with indicator
 regions_data = get_administrative_by_parent(1)
-region_options = {"All Regions": None}
+region_options = {"All Counties": None}
 if regions_data and "administrative" in regions_data:
     for r in sorted(regions_data["administrative"], key=lambda x: x["name"]):
         has_data = r["id"] in available_region_ids
@@ -184,7 +184,7 @@ if regions_data and "administrative" in regions_data:
         region_options[label] = r["id"]
 
 selected_region_label = st.sidebar.selectbox(
-    "Region",
+    "County",
     list(region_options.keys()),
     index=0,
 )
@@ -238,7 +238,7 @@ if selected_region_id:
 
 # Show filter path
 filter_parts = []
-if selected_region_name and selected_region_name != "All Regions":
+if selected_region_name and selected_region_name != "All Counties":
     filter_parts.append(selected_region_name)
 if selected_district_name and selected_district_name != "All Districts":
     filter_parts.append(selected_district_name)
@@ -257,7 +257,7 @@ elif selected_district_name != "All Districts":
     breakdown_level = "ward"  # Fetch wards, but no grouping (single district)
     breakdown_admin_id = selected_district_id
     group_by_level = None
-elif selected_region_name != "All Regions":
+elif selected_region_name != "All Counties":
     breakdown_level = "ward"  # Fetch wards, group by district
     breakdown_admin_id = selected_region_id
     group_by_level = "district"
@@ -314,7 +314,7 @@ if stats:
                 path_parts = breakdown_df["path"].str.split(" > ")
                 if group_by_level == "region":
                     breakdown_df["parent"] = path_parts.str[1]  # Region is 2nd part
-                    level_label = "Region"
+                    level_label = "County"
                 elif group_by_level == "district":
                     breakdown_df["parent"] = path_parts.str[2]  # District is 3rd part
                     level_label = "District"

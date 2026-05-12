@@ -117,18 +117,18 @@ st.sidebar.markdown("""
 
 # Cascade admin filter
 administrative_id = None
-selected_region_name = "All Regions"
+selected_region_name = "All Counties"
 selected_district_name = "All Districts"
 
 # Load regions
 regions_data = get_administrative_by_parent(1)
-region_options = {"All Regions": None}
+region_options = {"All Counties": None}
 if regions_data and "administrative" in regions_data:
     for r in sorted(regions_data["administrative"], key=lambda x: x["name"]):
         region_options[r["name"]] = r["id"]
 
 selected_region_label = st.sidebar.selectbox(
-    "Region",
+    "County",
     list(region_options.keys()),
     index=0,
 )
@@ -159,7 +159,7 @@ if selected_region_id:
 
 # Show filter path
 filter_parts = []
-if selected_region_name and selected_region_name != "All Regions":
+if selected_region_name and selected_region_name != "All Counties":
     filter_parts.append(selected_region_name)
 if selected_district_name and selected_district_name != "All Districts":
     filter_parts.append(selected_district_name)
