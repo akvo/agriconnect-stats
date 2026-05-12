@@ -234,17 +234,18 @@ if distribution_data and distribution_data.get("crops"):
 
     # Matrix Table
     if matrix_data and matrix_data.get("matrix"):
-        st.markdown("""
-        <p class="section-title"><i class="fa-solid fa-table-cells"></i> Crop Distribution by County</p>
-        """, unsafe_allow_html=True)
-
         matrix = matrix_data["matrix"]
         crop_types = matrix_data.get("crop_types", [])
+        level_name = matrix_data.get("level_name", "County")
+
+        st.markdown(f"""
+        <p class="section-title"><i class="fa-solid fa-table-cells"></i> Crop Distribution by {level_name}</p>
+        """, unsafe_allow_html=True)
 
         # Build rows for DataFrame
         rows = []
         for row in matrix:
-            row_data = {"County": row["county"]}
+            row_data = {level_name: row["county"]}
             for crop in crop_types:
                 row_data[crop] = row["crops"].get(crop, 0)
             row_data["Total"] = row["total"]
@@ -253,7 +254,7 @@ if distribution_data and distribution_data.get("crops"):
         matrix_df = pd.DataFrame(rows)
 
         # Add totals row
-        totals = {"County": "Total"}
+        totals = {level_name: "Total"}
         for crop in crop_types:
             totals[crop] = matrix_df[crop].sum()
         totals["Total"] = matrix_df["Total"].sum()
@@ -262,7 +263,7 @@ if distribution_data and distribution_data.get("crops"):
         # Summary banner
         st.markdown(f"""
         <div class="info-banner">
-            <strong>{len(matrix)}</strong> counties ·
+            <strong>{len(matrix)}</strong> {level_name.lower()}s ·
             <strong>{len(crop_types)}</strong> crop types ·
             <strong>{totals['Total']:,}</strong> total farmers
         </div>
@@ -284,7 +285,7 @@ if distribution_data and distribution_data.get("crops"):
             mime="text/csv",
         )
     else:
-        st.info("No county-level data available for selected filters.")
+        st.info("No location-level data available for selected filters.")
 
 else:
     if distribution_data is None:
