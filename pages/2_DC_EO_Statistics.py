@@ -676,14 +676,6 @@ if stats:
                     st.dataframe(display_df, use_container_width=True, hide_index=True)
                 else:
                     st.info("No tickets in this category")
-                    ]
-                    display_df["Parent EO"] = display_df["Parent EO"].apply(
-                        lambda x: "✓" if x else ""
-                    )
-                    display_df["Wait Time"] = display_df["Wait Time"].apply(format_wait_time)
-                    st.dataframe(display_df, use_container_width=True, hide_index=True)
-                else:
-                    st.info("No tickets in this category")
                     
             st.markdown("""
             <div class="info-banner">
