@@ -562,6 +562,20 @@ if stats:
     <p class="section-title"><i class="fa-solid fa-clock"></i> Tickets Waiting on EO Response</p>
     """, unsafe_allow_html=True)
 
+    # Helper function to format wait time
+    def format_wait_time(hours):
+        """Format wait time: show 'x day x hours' format"""
+        days = int(hours // 24)
+        remaining_hours = int(hours % 24)
+        
+        if days > 0:
+            if remaining_hours > 0:
+                return f"{days}d {remaining_hours}h"
+            else:
+                return f"{days}d"
+        else:
+            return f"{int(hours)}h"
+
     waiting_data = get_tickets_waiting_response(
         start_date=start_date,
         end_date=end_date,
@@ -615,11 +629,12 @@ if stats:
                         "eo_name", "assigned_to_parent", "waiting_hours"
                     ]].copy()
                     display_df.columns = [
-                        "Ticket #", "Farmer", "Ward", "EO", "Parent EO", "Wait (hrs)"
+                        "Ticket #", "Farmer", "Ward", "EO", "Parent EO", "Wait Time"
                     ]
                     display_df["Parent EO"] = display_df["Parent EO"].apply(
                         lambda x: "✓" if x else ""
                     )
+                    display_df["Wait Time"] = display_df["Wait Time"].apply(format_wait_time)
                     st.dataframe(display_df, use_container_width=True, hide_index=True)
                 else:
                     st.info("No tickets in this category")
@@ -633,11 +648,12 @@ if stats:
                         "eo_name", "assigned_to_parent", "waiting_hours"
                     ]].copy()
                     display_df.columns = [
-                        "Ticket #", "Farmer", "Ward", "EO", "Parent EO", "Wait (hrs)"
+                        "Ticket #", "Farmer", "Ward", "EO", "Parent EO", "Wait Time"
                     ]
                     display_df["Parent EO"] = display_df["Parent EO"].apply(
                         lambda x: "✓" if x else ""
                     )
+                    display_df["Wait Time"] = display_df["Wait Time"].apply(format_wait_time)
                     st.dataframe(display_df, use_container_width=True, hide_index=True)
                 else:
                     st.info("No tickets in this category")
@@ -651,11 +667,12 @@ if stats:
                         "eo_name", "assigned_to_parent", "waiting_hours"
                     ]].copy()
                     display_df.columns = [
-                        "Ticket #", "Farmer", "Ward", "EO", "Parent EO", "Wait (hrs)"
+                        "Ticket #", "Farmer", "Ward", "EO", "Parent EO", "Wait Time"
                     ]
                     display_df["Parent EO"] = display_df["Parent EO"].apply(
                         lambda x: "✓" if x else ""
                     )
+                    display_df["Wait Time"] = display_df["Wait Time"].apply(format_wait_time)
                     st.dataframe(display_df, use_container_width=True, hide_index=True)
                 else:
                     st.info("No tickets in this category")
