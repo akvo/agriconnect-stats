@@ -559,7 +559,7 @@ if stats:
 
     # Tickets Waiting Response Section
     st.markdown("""
-    <p class="section-title"><i class="fa-solid fa-clock"></i> Tickets Waiting on EO Response</p>
+    <p class="section-title"><i class="fa-solid fa-clock"></i> Tickets Waiting on EO Response <span style="font-size: 0.7rem; font-weight: normal; color: #94a3b8;">(all open tickets, date filter not applied)</span></p>
     """, unsafe_allow_html=True)
 
     # Helper function to format wait time
@@ -590,8 +590,8 @@ if stats:
         
         with col1:
             st.metric(
-                label="2-24 Hours",
-                value=f"{summary.get('waiting_2_24_hours', 0):,}"
+                label="0-24 Hours",
+                value=f"{summary.get('waiting_0_24_hours', 0):,}"
             )
         with col2:
             st.metric(
@@ -615,13 +615,13 @@ if stats:
             
             # Create tabs for each wait time category
             tab1, tab2, tab3 = st.tabs([
-                f"2-24 Hours ({summary.get('waiting_2_24_hours', 0)})",
+                f"0-24 Hours ({summary.get('waiting_0_24_hours', 0)})",
                 f"24-48 Hours ({summary.get('waiting_24_48_hours', 0)})",
                 f">48 Hours ({summary.get('waiting_over_48_hours', 0)})"
             ])
             
             with tab1:
-                tickets = waiting_data.get("tickets_2_24_hours", [])
+                tickets = waiting_data.get("tickets_0_24_hours", [])
                 if tickets:
                     df = pd.DataFrame(tickets)
                     display_df = df[[
