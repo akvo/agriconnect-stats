@@ -565,7 +565,7 @@ if stats:
     waiting_data = get_tickets_waiting_response(
         start_date=start_date,
         end_date=end_date,
-        administrative_id=selected_admin_id,
+        administrative_id=administrative_id,
     )
 
     if waiting_data and waiting_data.get("summary"):
