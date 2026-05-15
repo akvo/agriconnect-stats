@@ -625,11 +625,11 @@ if stats:
                 if tickets:
                     df = pd.DataFrame(tickets)
                     display_df = df[[
-                        "ticket_number", "customer_name", "ward_name",
+                        "ticket_number", "customer_name", "ward_path",
                         "eo_name", "assigned_to_parent", "waiting_hours"
                     ]].copy()
                     display_df.columns = [
-                        "Ticket #", "Farmer", "Ward", "EO", "Parent EO", "Wait Time"
+                        "Ticket #", "Farmer", "Location", "EO", "Parent EO", "Wait Time"
                     ]
                     display_df["Parent EO"] = display_df["Parent EO"].apply(
                         lambda x: "✓" if x else ""
@@ -644,11 +644,11 @@ if stats:
                 if tickets:
                     df = pd.DataFrame(tickets)
                     display_df = df[[
-                        "ticket_number", "customer_name", "ward_name",
+                        "ticket_number", "customer_name", "ward_path",
                         "eo_name", "assigned_to_parent", "waiting_hours"
                     ]].copy()
                     display_df.columns = [
-                        "Ticket #", "Farmer", "Ward", "EO", "Parent EO", "Wait Time"
+                        "Ticket #", "Farmer", "Location", "EO", "Parent EO", "Wait Time"
                     ]
                     display_df["Parent EO"] = display_df["Parent EO"].apply(
                         lambda x: "✓" if x else ""
@@ -663,11 +663,19 @@ if stats:
                 if tickets:
                     df = pd.DataFrame(tickets)
                     display_df = df[[
-                        "ticket_number", "customer_name", "ward_name",
+                        "ticket_number", "customer_name", "ward_path",
                         "eo_name", "assigned_to_parent", "waiting_hours"
                     ]].copy()
                     display_df.columns = [
-                        "Ticket #", "Farmer", "Ward", "EO", "Parent EO", "Wait Time"
+                        "Ticket #", "Farmer", "Location", "EO", "Parent EO", "Wait Time"
+                    ]
+                    display_df["Parent EO"] = display_df["Parent EO"].apply(
+                        lambda x: "✓" if x else ""
+                    )
+                    display_df["Wait Time"] = display_df["Wait Time"].apply(format_wait_time)
+                    st.dataframe(display_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No tickets in this category")
                     ]
                     display_df["Parent EO"] = display_df["Parent EO"].apply(
                         lambda x: "✓" if x else ""
