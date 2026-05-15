@@ -9,6 +9,7 @@ from api import (
     get_eo_count,
     get_administrative_by_parent,
     get_aggregate_eo,
+    get_tickets_waiting_response,
 )
 
 st.set_page_config(
@@ -553,6 +554,118 @@ if stats:
         """, unsafe_allow_html=True)
         if eo_count:
             st.metric(label="Total EOs", value=f"{eo_count.get('count', 0):,}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Tickets Waiting Response Section
+    st.markdown("""
+    <p class="section-title"><i class="fa-solid fa-clock"></i> Tickets Waiting on EO Response</p>
+    """, unsafe_allow_html=True)
+
+    waiting_data = get_tickets_waiting_response(
+        start_date=start_date,
+        end_date=end_date,
+        administrative_id=selected_admin_id,
+    )
+
+    if waiting_data and waiting_data.get("summary"):
+        summary = waiting_data["summary"]
+        
+        # Summary metrics
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric(
+                label="2-24 Hours",
+                value=f"{summary.get('waiting_2_24_hours', 0):,}"
+            )
+        with col2:
+            st.metric(
+                label="24-48 Hours",
+                value=f"{summary.get('waiting_24_48_hours', 0):,}"
+            )
+        with col3:
+            st.metric(
+                label=">48 Hours",
+                value=f"{summary.get('waiting_over_48_hours', 0):,}"
+            )
+        with col4:
+            st.metric(
+                label="Total Waiting",
+                value=f"{summary.get('total_waiting', 0):,}"
+            )
+
+        # Show detailed ticket lists if there are waiting tickets
+        if summary.get('total_waiting', 0) > 0:
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # Create tabs for each wait time category
+            tab1, tab2, tab3 = st.tabs([
+                f"2-24 Hours ({summary.get('waiting_2_24_hours', 0)})",
+                f"24-48 Hours ({summary.get('waiting_24_48_hours', 0)})",
+                f">48 Hours ({summary.get('waiting_over_48_hours', 0)})"
+            ])
+            
+            with tab1:
+                tickets = waiting_data.get("tickets_2_24_hours", [])
+                if tickets:
+                    df = pd.DataFrame(tickets)
+                    display_df = df[[
+                        "ticket_number", "customer_name", "ward_name",
+                        "eo_name", "assigned_to_parent", "waiting_hours"
+                    ]].copy()
+                    display_df.columns = [
+                        "Ticket #", "Farmer", "Ward", "EO", "Parent EO", "Wait (hrs)"
+                    ]
+                    display_df["Parent EO"] = display_df["Parent EO"].apply(
+                        lambda x: "✓" if x else ""
+                    )
+                    st.dataframe(display_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No tickets in this category")
+            
+            with tab2:
+                tickets = waiting_data.get("tickets_24_48_hours", [])
+                if tickets:
+                    df = pd.DataFrame(tickets)
+                    display_df = df[[
+                        "ticket_number", "customer_name", "ward_name",
+                        "eo_name", "assigned_to_parent", "waiting_hours"
+                    ]].copy()
+                    display_df.columns = [
+                        "Ticket #", "Farmer", "Ward", "EO", "Parent EO", "Wait (hrs)"
+                    ]
+                    display_df["Parent EO"] = display_df["Parent EO"].apply(
+                        lambda x: "✓" if x else ""
+                    )
+                    st.dataframe(display_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No tickets in this category")
+            
+            with tab3:
+                tickets = waiting_data.get("tickets_over_48_hours", [])
+                if tickets:
+                    df = pd.DataFrame(tickets)
+                    display_df = df[[
+                        "ticket_number", "customer_name", "ward_name",
+                        "eo_name", "assigned_to_parent", "waiting_hours"
+                    ]].copy()
+                    display_df.columns = [
+                        "Ticket #", "Farmer", "Ward", "EO", "Parent EO", "Wait (hrs)"
+                    ]
+                    display_df["Parent EO"] = display_df["Parent EO"].apply(
+                        lambda x: "✓" if x else ""
+                    )
+                    st.dataframe(display_df, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No tickets in this category")
+                    
+            st.markdown("""
+            <div class="info-banner">
+                <strong>Note:</strong> Checkmark (✓) in "Parent EO" column indicates the ward has no assigned EO,
+                so the ticket is being handled by a district or region level EO.
+            </div>
+            """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 

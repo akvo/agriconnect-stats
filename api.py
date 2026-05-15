@@ -238,3 +238,19 @@ def get_crop_distribution_matrix(
     if administrative_id:
         params["administrative_id"] = administrative_id
     return api_get("/statistic/crops/distribution/matrix", params=params)
+
+
+def get_tickets_waiting_response(
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    administrative_id: Optional[int] = None,
+):
+    """Get tickets waiting for EO response by wait time."""
+    params = {}
+    if start_date:
+        params["start_date"] = start_date.isoformat()
+    if end_date:
+        params["end_date"] = end_date.isoformat()
+    if administrative_id:
+        params["administrative_id"] = administrative_id
+    return api_get("/statistic/eo/tickets-waiting-response", params=params)
